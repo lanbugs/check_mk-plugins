@@ -5,7 +5,7 @@
 # LLDP Inventory Extension - Shows LLDP Neighbors of a network device
 # Use it on your own risk!
 #
-# Version 1.0
+# Version 1.1
 # Written 2017 - Maximilian Thoma
 #
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU
