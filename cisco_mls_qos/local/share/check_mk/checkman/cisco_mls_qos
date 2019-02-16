@@ -1,0 +1,16 @@
+title: Cisco MLS QoS Queue Monitoring
+agents: snmp
+catalog: hw/network/cisco
+license: GPL
+distribution: lanbugs
+description:
+ Cisco MLS QoS monitor the hardware queues of an Cisco switch.
+
+item:
+ The description of the sensor as provided by
+ the device.
+
+inventory:
+ One check for each interface is created by the inventory for every
+ interface where mls qos informations are provided by the switch.
+ You must define which queues you will monitor with an WATO rule.

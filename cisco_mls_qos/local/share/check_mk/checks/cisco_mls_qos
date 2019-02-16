@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+
+#
+# Cisco MLS QoS Check - Check hardware queues of an Cisco switch
+# Use it on your own risk!
+#
+# Version 1.0
+# Written 2017 - Maximilian Thoma
+#
+# This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program; if not,
+# write to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA
+#
+
+def inventory_cisco_mls_qos(info):
+    if_name, mls_qos = info
+
+    buffer_mls = {}
+
+    for line in mls_qos:
+        if_idx, q, t = line[0].split(".")
+
+        if not buffer_mls.get(if_idx):
+            buffer_mls[if_idx] = []
+
+        buffer_mls[if_idx].append((q,t))
+
+    for if_idx in sorted(buffer_mls.keys()):
+        yield if_idx, {}
+
+
+
+
+def check_cisco_mls_qos(item, params, info):
+
+    if_name, mls_qos = info
+
+    buffer_mls = {}
+    buffer_if = {}
+    perfdata = []
+    msg = ""
+
+    for line in mls_qos:
+        if_idx, q, t = line[0].split(".")
+        enq = int(line[1])
+        drp = int(line [2])
+
+        if not buffer_mls.get(if_idx):
+            buffer_mls[if_idx] = {}
+
+        if not buffer_mls[if_idx].get(q):
+            buffer_mls[if_idx][q] = {}
+
+        if not buffer_mls[if_idx][q].get(t):
+            buffer_mls[if_idx][q][t] = {}
+
+        buffer_mls[if_idx][q][t]= {
+        "enq"   :   enq,
+        "drp"   :   drp
+        }
+
+    for i in if_name:
+        idx, name = i
+        buffer_if[idx]=name.replace("GigabitEthernet","Gi").replace("FastEthernet","Fa")
+
+    this_time = time.time()
+    
+    if len(params) > 0:
+        for p in params:
+
+            q = str(p[0])
+            t = str(p[1])
+            w_drp = p[2]
+            c_drp = p[3]
+            w_enq = p[4]
+            c_enq = p[5]
+
+            # Get values from buffer
+            r = buffer_mls[item][q][t]
+
+            enq = r['enq']
+            drp = r['drp']
+
+            enq_ps = get_rate("enq_if%s_q%s_t%s" % (if_idx,q,t), this_time, enq)
+            drp_ps = get_rate("drp_if%s_q%s_t%s" % (if_idx,q,t), this_time, drp)
+
+            warn = False
+            crit = False
+
+            ifn = buffer_if[if_idx]
+
+            if drp_ps >= c_drp:
+                crit = True
+            elif drp_ps >= w_drp:
+                warn = True
+
+            if enq_ps >= c_enq:
+                crit = True
+            elif enq_ps >= w_enq:
+                warn = True
+
+            msg = "Q:%s T:%s Enq/s:%.2f Drp/s:%.2f EnqT:%s pkts DrpT:%s pkts" %(q,t,enq_ps,drp_ps,enq,drp)
+
+            perfdata.append(("Enqueued_Pps_Q_%s_T_%s" %(q, t), enq_ps))
+            perfdata.append(("Dropped_Pps_Q_%s_T_%s" %(q, t), drp_ps))
+
+            if crit:
+                yield 2, msg, perfdata
+            elif warn:
+                yield 1, msg, perfdata
+            else:
+                yield 0, msg, perfdata
+
+    else:
+        yield 0, "No MLS QoS configuration done, please define rule which queues are to be monitored."
+
+check_info["cisco_mls_qos"] = {
+    "check_function"        :   check_cisco_mls_qos,
+    "inventory_function"    :   inventory_cisco_mls_qos,
+    "group"                 :   "cisco_mls_qos",
+    "service_description"   :   "MLS QoS Interface %s",
+    "snmp_scan_function"    :   lambda oid: oid(".1.3.6.1.2.1.1.2.0").startswith(".1.3.6.1.4.1.9.1"),
+    "snmp_info"             :   [(".1.3.6.1.2.1.2.2.1",         [OID_END,
+                                                                 "2" # Ifname
+                                ]),
+                                (".1.3.6.1.4.1.9.9.189.1.3.5.1",[OID_END,
+                                                                 "3", # cportQosQueueEnqueuePkts
+                                                                 "4"  # cportQosQueueDropPkts
+                                ])
+                                ],
+
+    "has_perfdata"          :   True,
+}
