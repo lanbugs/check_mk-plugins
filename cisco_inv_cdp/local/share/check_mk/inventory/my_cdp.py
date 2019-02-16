@@ -4,8 +4,10 @@
 # Cisco CDP Inventory Extension - Shows CDP Neighbors of a Cisco device
 # Use it on your own risk!
 #
-# Version 1.0
+# Version 1.1
 # Written 2017 - Maximilian Thoma
+#
+# Version 1.1 patch for Check_MK 1.5.x
 #
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU
 # General Public License as published by the Free Software Foundation; either version 2 of the
@@ -22,7 +24,7 @@
 
 def inv_cdp(info, params):
 
-    node = inv_tree("networking.cdp:")
+    node = inv_tree_list("networking.cdp:")
     
     local_if, remote_if = info
 
