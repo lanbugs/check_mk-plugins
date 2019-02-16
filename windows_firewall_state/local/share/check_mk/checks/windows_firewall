@@ -1,0 +1,74 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+
+#
+# Windows Firewall State - Check the state and profile of the Windows Firewall
+# Use it on your own risk!
+#
+# Version 1.0
+# Written 2017 - Maximilian Thoma
+#
+# This program is free software; you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with this program; if not,
+# write to the Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA
+#
+
+defaults_windows_firewall = {
+                            "STATE": "ON",
+                            "PROFILE": "Domain",
+                            "CSTATE": "eingehend blockieren, ausgehend zulassen"
+                            }
+
+
+def inventory_windows_firewall(info):
+    yield None, defaults_windows_firewall
+
+
+def check_windows_firewall(item, params, info):
+
+    for i in info:
+        if "CSTATE" in i:
+            cstate = " ".join(i[1:])
+        elif "STATE" in i:
+            state = i[1]
+        elif "PROFILE" in i:
+            profile = i[1]
+        elif "EMSG" in i:
+            emsg = " ".join(i[1:])
+            
+    # Check profile
+    if params['PROFILE'] != profile:
+        yield 1, "Profile mismatch, configured %s, on system %s" % (params['PROFILE'], profile)
+    else:
+        yield 0, "Profile match: %s" % profile
+        
+    # Check state
+    if params['STATE'] != state:
+        yield 2, "Firewall state mismatch, configured %s, on system %s" % (params['STATE'], state)
+    else:
+        yield 0, "Firewall state match: %s" % state
+                
+
+    # connstate
+    if params['CSTATE'] != cstate:
+        yield 1, "Connection State mismatch, configured %s, on system %s" % (params['CSTATE'], cstate)
+    else:
+        yield 0, "Connection State: %s" % cstate
+    
+    # error msg
+    if 'emsg' in locals():
+        yield 3, "Unexpected message: " + emsg
+
+check_info['windows_firewall'] = {
+    'inventory_function'    : inventory_windows_firewall,
+    'check_function'        : check_windows_firewall,
+    'service_description'   : 'Windows Firewall State',
+    'group'                 : 'windows_firewall',
+}
