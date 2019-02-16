@@ -22,7 +22,7 @@
 
 def inv_lldp(info, params):
 
-    node = inv_tree("networking.lldp:")
+    node = inv_tree_list("networking.lldp:")
 
     local_if, remote_if = info
 
