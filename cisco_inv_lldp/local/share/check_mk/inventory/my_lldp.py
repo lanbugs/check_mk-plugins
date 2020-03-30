@@ -55,7 +55,7 @@ inv_info["inv_lldp"] = {
                                          ]),
                                           (".1.0.8802.1.1.2.1.4.1.1", [OID_END, # if string
                                                                       "9", # hostname
-                                                                      "8", # remote if name
+                                                                      "7", # remote if name
                                          ]),
                                          ],
                   "snmp_scan_function" : lambda oid: oid(".1.0.8802.1.*") != None,
